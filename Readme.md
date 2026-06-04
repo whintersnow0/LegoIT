@@ -2,8 +2,7 @@
 
 Blender addon that turns any mesh into a LEGO-style model using Geometry Nodes.
 
-## Demo
-(preview/preview.gif)
+![Demo](preview/preview.gif)
 
 ## Usage
 
