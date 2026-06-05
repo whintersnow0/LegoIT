@@ -33,10 +33,12 @@ jobs:
 
       - name: Upload to Gumroad
         run: |
+          FILE_SIZE=$(wc -c < addon.zip)
+
           PRESIGN=$(curl -s -X POST "https://api.gumroad.com/v2/files/presign" \
             -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"filename\": \"LegoIT.zip\", \"product_id\": \"${{ secrets.GUMROAD_PRODUCT_ID }}\"}")
+            -d "{\"filename\": \"LegoIT.zip\", \"product_id\": \"${{ secrets.GUMROAD_PRODUCT_ID }}\", \"file_size\": $FILE_SIZE}")
 
           echo "Presign response: $PRESIGN"
 
