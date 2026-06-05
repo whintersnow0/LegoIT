@@ -54,19 +54,15 @@ jobs:
             --data-binary @addon.zip \
             -D - | grep -i etag | tr -d '\r' | awk '{print $2}')
 
-          curl -s -X POST "https://api.gumroad.com/v2/files/complete" \
+          echo "ETag: $ETAG"
+
+          COMPLETE=$(curl -s -X POST "https://api.gumroad.com/v2/files/complete" \
             -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"upload_id\": \"$UPLOAD_ID\", \"key\": \"$KEY\", \"parts\": [{\"part_number\": 1, \"etag\": \"$ETAG\"}]}"
+            -d "{\"upload_id\": \"$UPLOAD_ID\", \"key\": \"$KEY\", \"parts\": [{\"part_number\": 1, \"etag\": \"$ETAG\"}]}")
+
+          echo "Complete response: $COMPLETE"
 
           EXISTING_ID="${{ steps.existing.outputs.id }}"
           if [ -n "$EXISTING_ID" ]; then
-            FILES="[{\"id\": \"$EXISTING_ID\"}, {\"url\": \"$FILE_URL\"}]"
-          else
-            FILES="[{\"url\": \"$FILE_URL\"}]"
-          fi
-
-          curl -s -X PUT "https://api.gumroad.com/v2/products/${{ secrets.GUMROAD_PRODUCT_ID }}" \
-            -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"files\": $FILES}"
+            FILES="[{\"id\": \"$EXISTING_ID\"}, {\"url\": \"
