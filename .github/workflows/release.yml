@@ -4,24 +4,18 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      asset_url:
-        description: 'ZIP file URL to upload to Gumroad'
-        required: true
 
 jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
-      - name: Get asset URL
+      - name: Get latest release asset URL
         id: get_url
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            ASSET_URL=$(echo '${{ toJson(github.event.release.assets) }}' | \
-              python3 -c "import sys,json; assets=json.load(sys.stdin); print(assets[0]['url'])")
-          else
-            ASSET_URL="${{ inputs.asset_url }}"
-          fi
+          ASSET_URL=$(curl -s \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest" | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); print(d['assets'][0]['browser_download_url'])")
           echo "url=$ASSET_URL" >> $GITHUB_OUTPUT
 
       - name: Download ZIP
@@ -30,6 +24,14 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/octet-stream" \
             -o addon.zip
+
+      - name: Get existing file ID
+        id: existing
+        run: |
+          FILE_ID=$(curl -s "https://api.gumroad.com/v2/products/${{ secrets.GUMROAD_PRODUCT_ID }}" \
+            -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); files=d['product'].get('files',[]); print(files[0]['id'] if files else '')")
+          echo "id=$FILE_ID" >> $GITHUB_OUTPUT
 
       - name: Upload to Gumroad
         run: |
@@ -57,7 +59,14 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{\"upload_id\": \"$UPLOAD_ID\", \"key\": \"$KEY\", \"parts\": [{\"part_number\": 1, \"etag\": \"$ETAG\"}]}"
 
+          EXISTING_ID="${{ steps.existing.outputs.id }}"
+          if [ -n "$EXISTING_ID" ]; then
+            FILES="[{\"id\": \"$EXISTING_ID\"}, {\"url\": \"$FILE_URL\"}]"
+          else
+            FILES="[{\"url\": \"$FILE_URL\"}]"
+          fi
+
           curl -s -X PUT "https://api.gumroad.com/v2/products/${{ secrets.GUMROAD_PRODUCT_ID }}" \
             -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"files\": [{\"url\": \"$FILE_URL\"}]}"
+            -d "{\"files\": $FILES}"
