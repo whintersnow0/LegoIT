@@ -4,16 +4,29 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      asset_url:
+        description: 'ZIP file URL to upload to Gumroad'
+        required: true
+
 jobs:
   upload:
     runs-on: ubuntu-latest
     steps:
-      - name: Download ZIP from release
+      - name: Get asset URL
+        id: get_url
         run: |
-          ASSET_URL=$(echo '${{ toJson(github.event.release.assets) }}' | \
-            python3 -c "import sys,json; assets=json.load(sys.stdin); print(assets[0]['url'])")
-          
-          curl -L "$ASSET_URL" \
+          if [ "${{ github.event_name }}" = "release" ]; then
+            ASSET_URL=$(echo '${{ toJson(github.event.release.assets) }}' | \
+              python3 -c "import sys,json; assets=json.load(sys.stdin); print(assets[0]['url'])")
+          else
+            ASSET_URL="${{ inputs.asset_url }}"
+          fi
+          echo "url=$ASSET_URL" >> $GITHUB_OUTPUT
+
+      - name: Download ZIP
+        run: |
+          curl -L "${{ steps.get_url.outputs.url }}" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/octet-stream" \
             -o addon.zip
