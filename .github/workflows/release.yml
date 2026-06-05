@@ -42,12 +42,20 @@ jobs:
 
           echo "Presign response: $PRESIGN"
 
-          UPLOAD_URL=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['upload_url'])")
-          FILE_URL=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['url'])")
+          PART_URL=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['parts'][0]['presigned_url'])")
+          UPLOAD_ID=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['upload_id'])")
+          KEY=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['key'])")
+          FILE_URL=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['file_url'])")
 
-          curl -X PUT "$UPLOAD_URL" \
+          ETAG=$(curl -s -X PUT "$PART_URL" \
             -H "Content-Type: application/zip" \
-            --data-binary @addon.zip
+            --data-binary @addon.zip \
+            -D - | grep -i etag | tr -d '\r' | awk '{print $2}')
+
+          curl -s -X POST "https://api.gumroad.com/v2/files/complete" \
+            -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"upload_id\": \"$UPLOAD_ID\", \"key\": \"$KEY\", \"parts\": [{\"part_number\": 1, \"etag\": \"$ETAG\"}]}"
 
           curl -s -X PUT "https://api.gumroad.com/v2/products/${{ secrets.GUMROAD_PRODUCT_ID }}" \
             -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
