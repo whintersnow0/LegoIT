@@ -31,22 +31,22 @@ jobs:
             -H "Accept: application/octet-stream" \
             -o addon.zip
 
-      - name: Upload to Gumroad (presign flow)
+      - name: Upload to Gumroad
         run: |
           PRESIGN=$(curl -s -X POST "https://api.gumroad.com/v2/files/presign" \
             -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"name\": \"LegoIT.zip\", \"product_id\": \"${{ secrets.GUMROAD_PRODUCT_ID }}\"}")
-          
+            -d "{\"filename\": \"LegoIT.zip\", \"product_id\": \"${{ secrets.GUMROAD_PRODUCT_ID }}\"}")
+
           echo "Presign response: $PRESIGN"
-          
+
           UPLOAD_URL=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['upload_url'])")
           FILE_URL=$(echo $PRESIGN | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['url'])")
-          
+
           curl -X PUT "$UPLOAD_URL" \
             -H "Content-Type: application/zip" \
             --data-binary @addon.zip
-          
+
           curl -s -X PUT "https://api.gumroad.com/v2/products/${{ secrets.GUMROAD_PRODUCT_ID }}" \
             -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
