@@ -1,0 +1,25 @@
+name: Upload to Gumroad
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download ZIP from release
+        run: |
+          ASSET_URL=$(echo '${{ toJson(github.event.release.assets) }}' | \
+            python3 -c "import sys,json; assets=json.load(sys.stdin); print(assets[0]['url'])")
+          
+          curl -L "$ASSET_URL" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/octet-stream" \
+            -o addon.zip
+
+      - name: Upload to Gumroad
+        run: |
+          curl -X PUT "https://api.gumroad.com/v2/products/${{ secrets.GUMROAD_PRODUCT_ID }}" \
+            -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
+            -F "file=@addon.zip"
