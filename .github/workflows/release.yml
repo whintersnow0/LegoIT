@@ -52,7 +52,7 @@ jobs:
           ETAG=$(curl -s -X PUT "$PART_URL" \
             -H "Content-Type: application/zip" \
             --data-binary @addon.zip \
-            -D - | grep -i etag | tr -d '\r' | awk '{print $2}')
+            -D - | grep -i etag | tr -d '\r' | awk '{print $2}' | tr -d '"')
 
           echo "ETag: $ETAG"
 
@@ -65,4 +65,14 @@ jobs:
 
           EXISTING_ID="${{ steps.existing.outputs.id }}"
           if [ -n "$EXISTING_ID" ]; then
-            FILES="[{\"id\": \"$EXISTING_ID\"}, {\"url\": \"
+            FILES="[{\"id\": \"$EXISTING_ID\"}, {\"url\": \"$FILE_URL\"}]"
+          else
+            FILES="[{\"url\": \"$FILE_URL\"}]"
+          fi
+
+          ATTACH=$(curl -s -X PUT "https://api.gumroad.com/v2/products/${{ secrets.GUMROAD_PRODUCT_ID }}" \
+            -H "Authorization: Bearer ${{ secrets.GUMROAD_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"files\": $FILES}")
+
+          echo "Attach response: $ATTACH"
