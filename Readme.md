@@ -21,4 +21,4 @@ The Geometry Nodes modifier will be applied to the active object.
 | Parameter | Description | Range |
 |-----------|-------------|-------|
 | Material  | Material applied to the LEGO bricks | Any material in the scene |
-| Density   | Controls how densely bricks fill the mesh | 0.0 – 1.0 |
+| Density   | Controls how densely bricks fill the mesh | 0.1 – 1.0 |
