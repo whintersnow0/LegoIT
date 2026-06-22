@@ -1,6 +1,6 @@
 # LegoIt
 
-Blender addon that turns any mesh into a LEGO-style model using Geometry Nodes.
+Blender addon that turns any mesh into a LEGO-style model using Geometry Nodes
 
 ![Demo](preview/preview.gif)
 
